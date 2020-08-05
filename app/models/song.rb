@@ -1,23 +1,24 @@
 class Song < ApplicationRecord
   validates :title, presence: true
+  validates :title, uniqueness: {
+    scope: [:release_year, :artist_name],
+    message: "Cannot release the same song twice in a year."
+  }
+  validates :released, inclusion: { in: [true, false] }
+  validate :release_year_presence
   validates :artist_name, presence: true
-  validate :no_repeat_titles
-  validates :release_year, presence: true,
-      if: :released?
-  validate :date_not_valid
 
-
-  def no_repeated_title
-        if Song.any? {|s| s.title == title && s.artist_name == artist_name && s.release_year == release_year}
-            errors.add(:title, "can't add the same song twice")
+  def release_year_presence
+    if self.released
+      unless self.release_year
+        errors.add(:release_year, "Released Song must have a released year.")
+      else
+        now = Time.new
+        if now.year < self.release_year
+          errors.add(:release_year, "Release year is in the future.")
         end
+      end
     end
-
-    def date_not_possible
-        if release_year.present? && release_year > Date.today.year
-            errors.add(:release_year, "release year can't be in the future")
-        end
-    end
-
+  end
 
 end
